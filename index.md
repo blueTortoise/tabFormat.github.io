@@ -88,9 +88,8 @@
 <body>
     <div class="container container-table">
         <div class="row vertical-center-row">
-            <div class="center">
-                This is a webconnector for the sample USGS earthquake data.
-				Please use tableau to connect to this URL
+            <div class="text-center col-md-4 col-md-offset-4">
+                <button type = "button" id = "submitButton" class = "btn btn-success" style = "margin: 10px;">Get Earthquake Data!</button>
             </div>
         </div>
     </div>
