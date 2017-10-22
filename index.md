@@ -1,37 +1,72 @@
-## Welcome to GitHub Pages
+(function() {
+    // Create the connector object
+    var myConnector = tableau.makeConnector();
 
-You can use the [editor on GitHub](https://github.com/blueTortoise/tabFormat.github.io/edit/master/index.md) to maintain and preview the content for your website in Markdown files.
+    // Define the schema
+    myConnector.getSchema = function(schemaCallback) {
+        var cols = [{
+            id: "id",
+            dataType: tableau.dataTypeEnum.string
+        }, {
+            id: "mag",
+            alias: "magnitude",
+            dataType: tableau.dataTypeEnum.float
+        }, {
+            id: "title",
+            alias: "title",
+            dataType: tableau.dataTypeEnum.string
+        }, {
+            id: "lat",
+            alias: "latitude",
+            columnRole: "dimension",
+            // Do not aggregate values as measures in Tableau--makes it easier to add to a map 
+            dataType: tableau.dataTypeEnum.float
+        }, {
+            id: "lon",
+            alias: "longitude",
+            columnRole: "dimension",
+            // Do not aggregate values as measures in Tableau--makes it easier to add to a map 
+            dataType: tableau.dataTypeEnum.float
+        }];
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+        var tableSchema = {
+            id: "earthquakeFeed",
+            alias: "Earthquakes with magnitude greater than 4.5 in the last seven days",
+            columns: cols
+        };
 
-### Markdown
+        schemaCallback([tableSchema]);
+    };
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+    // Download the data
+    myConnector.getData = function(table, doneCallback) {
+        $.getJSON("http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson", function(resp) {
+            var feat = resp.features,
+                tableData = [];
 
-```markdown
-Syntax highlighted code block
+            // Iterate over the JSON object
+            for (var i = 0, len = feat.length; i < len; i++) {
+                tableData.push({
+                    "id": feat[i].id,
+                    "mag": feat[i].properties.mag,
+                    "title": feat[i].properties.title,
+                    "lon": feat[i].geometry.coordinates[0],
+                    "lat": feat[i].geometry.coordinates[1]
+                });
+            }
 
-# Header 1
-## Header 2
-### Header 3
+            table.appendRows(tableData);
+            doneCallback();
+        });
+    };
 
-- Bulleted
-- List
+    tableau.registerConnector(myConnector);
 
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/blueTortoise/tabFormat.github.io/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+    // Create event listeners for when the user submits the form
+    $(document).ready(function() {
+        $("#submitButton").click(function() {
+            tableau.connectionName = "USGS Earthquake Feed"; // This will be the data source name in Tableau
+            tableau.submit(); // This sends the connector object to Tableau
+        });
+    });
+})();
